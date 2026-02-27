@@ -290,9 +290,10 @@
             ]);
     
         if (error) {
-            console.error("Gagal mencatat log aktivitas:", error.message);
+            console.error("Gagal insert ke Supabase:", error); // Cek konsol F12 lo
+            alert("Gagal log: " + error.message);
         } else {
-            console.log(`Log ${status} berhasil dicatat untuk IP: ${userIP}`);
+            console.log("Log berhasil masuk!");
         }
     }
     async function checkLogin() {
@@ -377,6 +378,7 @@ function showMessage(msg) {
 </body>
 
 </html>
+
 
 
 
