@@ -276,8 +276,9 @@
         }
     }
     async function logActivity(status) {
-        const userIP = await getIP();
-        const currentTime = new Date().toISOString(); // Waktu saat ini
+        const now = new Date();
+        now.setHours(now.getHours() + 7);
+        const currentTime = now.toISOString().replace('Z', '+07:00');
     
         const { error } = await client
             .from('loginactivity')
@@ -378,6 +379,7 @@ function showMessage(msg) {
 </body>
 
 </html>
+
 
 
 
