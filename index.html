@@ -286,6 +286,7 @@
             showMessage("Terjadi kesalahan koneksi.");
             console.error(error);
         } else if (data) {
+            localStorage.setItem('adminLoggedIn', 'true');
             document.getElementById('loginSection').style.display = 'none';
             document.getElementById('mainApp').style.display = 'block';
             document.getElementById('logoutBtn').style.display = 'block';
@@ -295,6 +296,7 @@
     }
 
     function logout() {
+        localStorage.removeItem('adminLoggedIn');
         document.getElementById('mainApp').style.display = 'none';
         document.getElementById('logoutBtn').style.display = 'none';
         document.getElementById('loginSection').style.display = 'block';
@@ -331,10 +333,19 @@ function showMessage(msg) {
         toast.className = "show";
         setTimeout(() => toast.className = toast.className.replace("show", ""), 2000);
     }
+    window.onload = function() {
+        if (localStorage.getItem('adminLoggedIn') === 'true') {
+            // Kalau memori login masih ada, langsung buka gemboknya
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            document.getElementById('logoutBtn').style.display = 'block';
+        }
+    };
 </script>
 </body>
 
 </html>
+
 
 
 
