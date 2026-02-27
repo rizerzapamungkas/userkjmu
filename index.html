@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Pencarian User KJMU</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --panel: #ffffff; --text: #1e293b; --accent: #000000; }
+        body { 
+                /* Ganti font-family di sini */
+                font-family: "Trebuchet MS", "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Tahoma, sans-serif; 
+                background: #f8fafc; 
+                padding: 2rem; 
+                color: var(--text); 
+            }
+        .wrapper { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; align-items: flex-start; }
+        .flex-break { flex: 0 0 100%; height: 0; }
+        .card { background: #ffffff; width: 360px; padding: 0 1rem 1rem 1rem; border-radius: 0px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.08); }
+        .card h2 { 
+            text-align: center;
+        }
+        .card-full h2 { 
+            text-align: left; 
+        }
+        .card-full { width: 100%; max-width: 1100px; margin: 0 auto; }
+        h2 { font-size: 1rem; }
+        input { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 0px; box-sizing: border-box; margin-bottom: 1rem; }
+        button { width: 100%; padding: 12px; background: #000; color: white; border: none; border-radius: 0px; cursor: pointer; font-weight: 500; }
+        .loading::after { content: ""; position: absolute; top: 0; left: -100%; width: 200%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); animation: loadingEffect 1.5s infinite; }
+        @keyframes loadingEffect { 0% { left: -100%; } 100% { left: 100%; } }
+        
+        .result-box { margin-top: 1rem; border-top: 1px solid #e2e8f0; display: none; }
+        .single-result { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; padding-top: 10px; }
+        .data-row { display: flex; align-items: center; border-bottom: 1px solid #f1f5f9; padding: 2px 0; }
+        .label-text { font-weight: 600; color: #64748b; min-width: 100px; display: inline-block; }
+        .val { flex: 1; padding-left: 10px; }
+        .btn-full { width: 100%; margin-top: 8px; padding: 6px; font-size: 0.75rem; }
+
+        /* Box 3 Table */
+        .table-responsive { overflow-x: auto; }
+        .table-header, .row-result { display: table-row; }
+        .cell { display: table-cell; padding: 8px 15px; white-space: nowrap; font-size: 0.9rem; border-bottom: 1px solid #f1f5f9; }
+        .cell:nth-child(4) { 
+            max-width: 150px; /* Atur batas lebar maksimal kolom password */
+            overflow: hidden;
+            text-overflow: ellipsis; /* Menambahkan titik-titik jika kepanjangan */
+            white-space: nowrap;
+        }
+        .cell:nth-child(3) { 
+            max-width: 150px; /* Atur batas lebar maksimal kolom password */
+            overflow: hidden;
+            text-overflow: ellipsis; /* Menambahkan titik-titik jika kepanjangan */
+            white-space: nowrap;
+        }
+        .cell:nth-child(1) { 
+            max-width: 200px; /* Atur batas lebar maksimal kolom password */
+            overflow: hidden;
+            text-overflow: ellipsis; /* Menambahkan titik-titik jika kepanjangan */
+            white-space: nowrap;
+        }
+        .table-header .cell { font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
+        .copy-btn { padding: 4px 8px; font-size: 0.7rem; cursor: pointer; border: 1px solid #000; border-radius: 0px; background: #000; color: #fff; width: 100%; }
+        
+        #toast { visibility: hidden; min-width: 200px; background-color: #000; color: #fff; text-align: center; border-radius: 6px; padding: 12px; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1000; font-size: 0.85rem; transition: visibility 0.4s, opacity 0.4s; opacity: 0; }
+        #toast.show { visibility: visible; opacity: 1; }
+        .search-hint {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-align: center;
+            margin-bottom: 1rem;
+            padding: 0 10px;
+            line-height: 1.4;
+        }
+        .pagination { display: flex; justify-content: center; gap: 5px; margin: 15px 0; }
+        .page-btn { 
+            padding: 5px 10px; 
+            cursor: pointer; 
+            border: 1px solid #000;
+            background: #fff; 
+            font-size: 0.8rem; 
+            border-radius: 0; 
+            min-width: 30px; /* Tambahin ini biar tombol angka lebarnya sama */
+            text-align: center;
+            color: #000;
+        }
+        .page-btn:hover { background: #f1f5f9; }
+        .page-btn.active { background: #000; color: #fff; border-color: #000; }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center; font-family: 'Trebuchet MS', sans-serif; margin: 2rem 0; font-size: 1.8rem; color: #1e293b;">
+        Sistem Pencarian User KJMU
+    </h1>
+
+    <button id="logoutBtn" onclick="logout()" 
+        style="display: none; position: absolute; top: 20px; right: 20px; 
+            padding: 8px 16px; border: 1px solid #000; background: #fff; 
+            cursor: pointer; font-size: 0.8rem; width: auto; color: #000; font-weight: 500;">
+        LOGOUT
+    </button>
+
+    <div id="loginSection" class="card" style="margin: 5rem auto; text-align: center; max-width: 320px; padding: 2rem;">
+        <h2>Login Admin</h2>
+        
+        <div id="msgBox" style="color: #ef4444; font-size: 0.85rem; margin-bottom: 1rem; height: 1.2rem; font-weight: bold;"></div>
+        
+        <input type="text" id="adminUser" placeholder="Username" style="margin-bottom: 1rem; width: 100%; box-sizing: border-box;">
+        
+        <div style="position: relative; margin-bottom: 1rem; width: 100%; text-align: left;">
+            <input type="password" id="adminPass" placeholder="Password" 
+                style="width: 100%; padding-right: 60px; box-sizing: border-box; margin-bottom: 0;">
+            <button type="button" onclick="togglePass()" id="eyeBtn" 
+                    style="position: absolute; right: 10px; top: 10px; border: none; background: none; cursor: pointer; font-size: 0.8rem; color: #64748b; padding: 0; width: auto; font-weight: 500;">
+                Lihat
+            </button>
+        </div>
+
+        <button onclick="checkLogin()" style="width: 100%;">MASUK</button>
+    </div>
+
+    <div id="mainApp" style="display: none;">
+        
+<div class="wrapper">
+    <div class="card"><h2>SEARCH BY USERNAME</h2><input type="text" id="inUser" placeholder="Ketik username..."><button onclick="cari('user', event)">CARI DATA</button><div id="resUser" class="result-box"></div></div>
+    <div class="card"><h2>SEARCH BY NIK</h2><input type="text" id="inNik" placeholder="Ketik NIK..."><button onclick="cari('nik', event)">CARI DATA</button><div id="resNik" class="result-box"></div></div>
+    <div class="flex-break"></div>
+    <div class="card card-full">
+        <h2>SEARCH BY NAMA MAHASISWA</h2>
+        <p style="font-size: 0.8rem; color: #64748b; text-align: left; margin-top: -0.7rem; font-style: italic;";>
+        (Contoh: Misal nama Syahnas Dwi Agustina, bisa dicari "Syahnas Dwi", "Dwi Agustina", "Syahnas", dll. Takut ada yang typo waktu bikin akun kjmu dan susah dicari.)
+        </p>
+        <input type="text" id="inName" placeholder="Ketik nama...">
+        <button onclick="cari('name', event)">CARI DATA</button>
+        <div id="resName" class="result-box">
+            <div class="table-responsive">
+                <div style="display: table; width: 100%;">
+                    <div class="table-header">
+                        <div class="cell">Nama</div><div class="cell">NIK</div><div class="cell">Username</div><div class="cell">Password</div><div class="cell">Status</div><div class="cell">Action</div>
+                    </div>
+                    <div id="tableBody" style="display: table-row-group;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast">Password berhasil disalin!</div>
+
+<script>
+    const client = supabase.createClient('https://dfpqyypdecedvykzjmwk.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmcHF5eXBkZWNlZHZ5a3pqbXdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxOTg3ODMsImV4cCI6MjA4Nzc3NDc4M30.JUEOafrPZ4Oz2DccIBLExwBD7yX4Tl7_kgqxtFqZHOc');
+    const formatStatus = (val) => (val === 'Y' ? 'Aktif' : 'Tidak Aktif');
+    let currentPage = 0;
+    const pageSize = 10;
+
+    document.getElementById("inUser").addEventListener("keypress", (e) => { if (e.key === "Enter") cari('user', e); });
+    document.getElementById("inNik").addEventListener("keypress", (e) => { if (e.key === "Enter") cari('nik', e); });
+    document.getElementById("inName").addEventListener("keypress", (e) => { if (e.key === "Enter") cari('name', e); });
+
+    async function cari(type, event, page = 0) {
+        // Kalau tombol navigasi diklik, event-nya null/undefined, jadi page-nya ambil dari parameter
+        // Kalau tombol Cari diklik, page-nya pasti 0
+        if (event && event.type === 'click') currentPage = 0; 
+        else currentPage = page;
+
+        const input = document.getElementById(type === 'user' ? 'inUser' : type === 'nik' ? 'inNik' : 'inName').value;
+        const btn = event ? event.target : null; // Handle null btn kalau dipanggil dr navigasi
+        const resDiv = document.getElementById(type === 'user' ? 'resUser' : type === 'nik' ? 'resNik' : 'resName');
+        
+        if (btn) btn.classList.add('loading');
+
+        // LOGIKA BOX 3 (NAME)
+        if (type === 'name') {
+            const start = currentPage * pageSize;
+            const end = start + pageSize - 1;
+            
+            const { data, count, error } = await client
+                .from('user')
+                .select('*', { count: 'exact' })
+                .ilike('FullName', `%${input}%`)
+                .range(start, end);
+            
+            if (btn) btn.classList.remove('loading');
+            resDiv.style.display = 'block';
+
+            if (!data || data.length === 0) { resDiv.innerHTML = "Tidak ditemukan."; return; }
+
+            // Bikin tombol 1 2 3 4 ...
+            const totalPages = Math.ceil(count / pageSize);
+            let navHTML = `<div class="pagination">
+                <button class="page-btn" onclick="cari('name', null, ${Math.max(0, currentPage - 1)})">&lt;</button>`;
+            
+            // Logika Pagination Slider (Maksimal 9 tombol)
+            let startPage = Math.max(0, currentPage - 4);
+            let endPage = Math.min(totalPages - 1, startPage + 8);
+            
+            // Adjust startPage kalau endPage udah mentok
+            if (endPage - startPage < 8) {
+                startPage = Math.max(0, endPage - 8);
+            }
+
+            for(let i = startPage; i <= endPage; i++) {
+                navHTML += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="cari('name', null, ${i})">${i + 1}</button>`;
+            }
+            
+            if (endPage < totalPages - 1) navHTML += `<span class="page-btn">...</span>`;
+
+            navHTML += `<button class="page-btn" onclick="cari('name', null, ${Math.min(totalPages - 1, currentPage + 1)})">&gt;</button></div>`;
+            
+            resDiv.innerHTML = navHTML + `
+                <div class="table-responsive">
+                    <div style="display: table; width: 100%;">
+                        <div class="table-header">
+                            <div class="cell">Nama</div><div class="cell">NIK</div><div class="cell">Username</div><div class="cell">Password</div><div class="cell">Status</div><div class="cell">Action</div>
+                        </div>
+                        <div id="tableBody" style="display: table-row-group;"></div>
+                    </div>
+                </div>`;
+            
+            data.forEach(item => {
+                document.getElementById('tableBody').innerHTML += `
+                    <div class="row-result">
+                        <div class="cell">${item.FullName}</div><div class="cell">${item.NIK}</div><div class="cell">${item.Username}</div><div class="cell">${item.Password}</div><div class="cell">${formatStatus(item.Activate)}</div>
+                        <div class="cell"><button class="copy-btn" onclick="copyText('${item.Password}')">Copy Password</button></div>
+                    </div>`;
+            });
+
+        // LOGIKA BOX 1 & 2 (TIDAK BERUBAH)
+        } else {
+            let query = client.from('user').select('*');
+            if (type === 'user') query = query.eq('Username', input).single();
+            else if (type === 'nik') query = query.eq('NIK', input).single();
+            
+            const { data, error } = await query;
+            if (btn) btn.classList.remove('loading');
+            
+            resDiv.style.display = 'block';
+            if (type === 'user') {
+                resDiv.innerHTML = data ? `
+                    <div class="single-result">
+                        <div class="data-row"><span class="label-text">NIK</span> <span class="val">: ${data.NIK}</span></div>
+                        <div class="data-row"><span class="label-text">NAMA</span> <span class="val">: ${data.FullName}</span></div>
+                        <div class="data-row"><span class="label-text">PASSWORD</span> <span class="val">: ${data.Password}</span></div>
+                        <div class="data-row"><span class="label-text">STATUS</span> <span class="val">: ${formatStatus(data.Activate)}</span></div>
+                        <button class="copy-btn btn-full" onclick="copyText('${data.Password}')">Copy Password</button>
+                    </div>` : "Tidak ditemukan.";
+            } else if (type === 'nik') {
+                resDiv.innerHTML = data ? `
+                    <div class="single-result">
+                        <div class="data-row"><span class="label-text">NAMA</span> <span class="val">: ${data.FullName}</span></div>
+                        <div class="data-row"><span class="label-text">USERNAME</span> <span class="val">: ${data.Username}</span></div>
+                        <div class="data-row"><span class="label-text">PASSWORD</span> <span class="val">: ${data.Password}</span></div>
+                        <div class="data-row"><span class="label-text">STATUS</span> <span class="val">: ${formatStatus(data.Activate)}</span></div>
+                        <button class="copy-btn btn-full" onclick="copyText('${data.Password}')">Copy Password</button>
+                    </div>` : "Tidak ditemukan.";
+            }
+        }
+    }
+    async function checkLogin() {
+        const user = document.getElementById('adminUser').value;
+        const pass = document.getElementById('adminPass').value;
+
+        // Ganti alert() jadi showMessage() di sini
+        if (!user || !pass) {
+            showMessage("Username & Password wajib diisi!");
+            return;
+        }
+
+        const { data, error } = await client
+            .from('admin')
+            .select('*')
+            .eq('user', user)
+            .eq('pass', pass)
+            .maybeSingle();
+
+        if (error) {
+            showMessage("Terjadi kesalahan koneksi.");
+            console.error(error);
+        } else if (data) {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            document.getElementById('logoutBtn').style.display = 'block';
+        } else {
+            showMessage("Username atau Password salah!");
+        }
+    }
+
+    function logout() {
+        document.getElementById('mainApp').style.display = 'none';
+        document.getElementById('logoutBtn').style.display = 'none';
+        document.getElementById('loginSection').style.display = 'block';
+        
+        document.getElementById('adminUser').value = '';
+        document.getElementById('adminPass').value = '';
+    }
+    // Fungsi untuk buka/tutup mata
+function togglePass() {
+    const passInput = document.getElementById('adminPass');
+    const eyeBtn = document.getElementById('eyeBtn');
+    if (passInput.type === 'password') {
+        passInput.type = 'text';
+        eyeBtn.textContent = 'Sembunyi';
+    } else {
+        passInput.type = 'password';
+        eyeBtn.textContent = 'Lihat';
+    }
+}
+
+// Tambahkan listener untuk tombol Enter
+document.getElementById('adminUser').addEventListener('keypress', (e) => { if (e.key === 'Enter') checkLogin(); });
+document.getElementById('adminPass').addEventListener('keypress', (e) => { if (e.key === 'Enter') checkLogin(); });
+
+function showMessage(msg) {
+    const msgBox = document.getElementById('msgBox');
+    msgBox.textContent = msg;
+    // Pesan otomatis hilang setelah 3 detik
+    setTimeout(() => { msgBox.textContent = ''; }, 3000);
+}
+    function copyText(text) {
+        navigator.clipboard.writeText(text);
+        const toast = document.getElementById("toast");
+        toast.className = "show";
+        setTimeout(() => toast.className = toast.className.replace("show", ""), 2000);
+    }
+</script>
+</body>
+</html>
