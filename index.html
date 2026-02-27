@@ -7,16 +7,23 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --panel: #ffffff; --text: #1e293b; --accent: #000000; }
-        body { 
-                /* Ganti font-family di sini */
-                font-family: "Trebuchet MS", "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Tahoma, sans-serif; 
-                background: #f8fafc; 
-                padding: 2rem; 
-                color: var(--text); 
-            }
+       body { 
+            font-family: "Trebuchet MS", sans-serif; 
+            background: #f8fafc; 
+            padding: 1rem; /* Ubah dari 2rem ke 1rem untuk mobile */
+            color: var(--text);
+            overflow-x: hidden; /* Mencegah geser kanan-kiri */
+            margin: 0;
+        }
         .wrapper { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; align-items: flex-start; }
         .flex-break { flex: 0 0 100%; height: 0; }
-        .card { background: #ffffff; width: 360px; padding: 0 1rem 1rem 1rem; border-radius: 0px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.08); }
+        .card {
+            width: 90%; /* Biar di HP gak terlalu lebar */
+            max-width: 320px;
+            margin: 2rem auto !important; /* Gunakan auto agar center */
+            padding: 1.5rem;
+            box-sizing: border-box;
+        }
         .card h2 { 
             text-align: center;
         }
@@ -89,7 +96,7 @@
     </style>
 </head>
 <body>
-    <h1 style="text-align: center; font-family: 'Trebuchet MS', sans-serif; margin: 2rem 0; font-size: 1.8rem; color: #1e293b;">
+    <h1 style="text-align: center; font-family: 'Trebuchet MS', sans-serif; margin: 1rem auto; font-size: 1.5rem; color: #1e293b; width: 100%;">
         Sistem Pencarian User KJMU
     </h1>
 
@@ -100,7 +107,7 @@
         LOGOUT
     </button>
 
-    <div id="loginSection" class="card" style="margin: 5rem auto; text-align: center; max-width: 320px; padding: 2rem;">
+    <div id="loginSection" class="card" style="margin: 2rem auto; text-align: center; width: 90%; max-width: 320px;">
         <h2>Login Admin</h2>
         
         <div id="msgBox" style="color: #ef4444; font-size: 0.85rem; margin-bottom: 1rem; height: 1.2rem; font-weight: bold;"></div>
@@ -324,4 +331,5 @@ function showMessage(msg) {
     }
 </script>
 </body>
+
 </html>
