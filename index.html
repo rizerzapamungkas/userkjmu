@@ -276,9 +276,13 @@
         }
     }
     async function logActivity(status) {
+    // 1. Panggil fungsi getIP() dulu supaya variabel userIP ada isinya
+        const userIP = await getIP();
+        
+        // 2. Bikin timestamp WIB dengan cara yang lebih aman dan rapi
+        // toLocaleString pake sv-SE bakal ngasih format YYYY-MM-DD HH:mm:ss
         const now = new Date();
-        now.setHours(now.getHours() + 7);
-        const currentTime = now.toISOString().replace('Z', '+07:00');
+        const wibTime = now.toLocaleString("sv-SE", { timeZone: "Asia/Jakarta" }).replace(" ", "T") + "+07:00";
     
         const { error } = await client
             .from('loginactivity')
@@ -286,12 +290,12 @@
                 { 
                     ip: userIP, 
                     status: status, 
-                    timestamp: currentTime 
+                    timestamp: wibTime 
                 }
             ]);
     
         if (error) {
-            console.error("Gagal insert ke Supabase:", error); // Cek konsol F12 lo
+            console.error("Gagal insert ke Supabase:", error); 
             alert("Gagal log: " + error.message);
         } else {
             console.log("Log berhasil masuk!");
@@ -379,6 +383,7 @@ function showMessage(msg) {
 </body>
 
 </html>
+
 
 
 
